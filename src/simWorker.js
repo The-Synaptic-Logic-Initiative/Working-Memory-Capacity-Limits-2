@@ -1,8 +1,19 @@
 import { SimulationEngine } from './SimulationEngine.js';
 
 let engine = null;
-let loopTimeout = null; // setTimeout handle — requestAnimationFrame does NOT exist in Workers
+let loopTimeout = null; 
 let lastTimestamp = 0;
+
+// Optimization: We reuse a single state object to prevent constant garbage collection
+const payloadBuffer = {
+  t: 0,
+  V: null,
+  spikes: null,
+  firing_rates: null,
+  stimuli: null,
+  S_exc: null, // Sending our new memory traces to the UI just in case!
+  S_inh: null
+};
 
 self.onmessage = (e) => {
   const { type, payload } = e.data;
@@ -10,6 +21,7 @@ self.onmessage = (e) => {
   switch (type) {
     case 'INIT':
       engine = new SimulationEngine(payload);
+      postState();
       break;
 
     case 'UPDATE_PARAMS':
@@ -26,7 +38,10 @@ self.onmessage = (e) => {
 
     case 'RESET':
       stopLoop();
-      if (engine) engine.reset();
+      if (engine) {
+        engine.reset();
+        postState();
+      }
       break;
 
     case 'START':
@@ -38,6 +53,7 @@ self.onmessage = (e) => {
 
     case 'STOP':
       stopLoop();
+      postState();
       break;
 
     case 'STEP':
@@ -57,7 +73,7 @@ function stopLoop() {
 }
 
 function scheduleLoop() {
-  // Target ~60fps (16ms). Use setTimeout which IS available in workers.
+  // Target 60fps (16.6ms)
   loopTimeout = setTimeout(run, 16);
 }
 
@@ -66,32 +82,44 @@ function run() {
   if (!engine) return;
 
   const now = performance.now();
-  const dt_real = now - lastTimestamp;
+  let dt_real = now - lastTimestamp;
   lastTimestamp = now;
 
-  // Run a batch of simulation steps to match the desired sim_speed
-  // sim_speed: 1 = realtime, 2 = 2x faster, etc.
-  const sim_speed = engine.params.sim_speed || 1;
-  // Steps to run in 16ms of real time at the given sim_speed
-  const steps_per_frame = Math.max(1, Math.round((16 * sim_speed) / engine.params.dt));
+  // CRITICAL SAFETY CATCH: If the user switched tabs and the browser throttled 
+  // the worker, dt_real will be massive. We cap it to prevent the physics 
+  // engine from trying to process 10,000 steps at once and crashing the tab.
+  if (dt_real > 100) {
+    dt_real = 16; // Pretend only one frame passed to save the engine
+  }
 
+  const sim_speed = engine.params.sim_speed || 1;
+  
+  // Calculate exactly how many 0.1ms physics steps fit into this real-time frame
+  const steps_per_frame = Math.max(1, Math.round((dt_real * sim_speed) / engine.params.dt));
+
+  // Run the berserk physics loop
   for (let i = 0; i < steps_per_frame; i++) {
     engine.step();
   }
 
   postState();
-  scheduleLoop(); // queue next frame
+  scheduleLoop(); 
 }
 
 function postState() {
+  if (!engine) return;
+
+  // We map the data into our reusable buffer to keep memory profiling clean
+  payloadBuffer.t = engine.t;
+  payloadBuffer.V = engine.V;
+  payloadBuffer.spikes = engine.spikes;
+  payloadBuffer.firing_rates = engine.firing_rates;
+  payloadBuffer.stimuli = engine.stimuli;
+  payloadBuffer.S_exc = engine.S_exc; 
+  payloadBuffer.S_inh = engine.S_inh;
+
   self.postMessage({
     type: 'STATE_UPDATE',
-    payload: {
-      t: engine.t,
-      V: engine.V,
-      spikes: engine.spikes,
-      firing_rates: engine.firing_rates,
-      stimuli: engine.stimuli,
-    },
+    payload: payloadBuffer,
   });
 }
