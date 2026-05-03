@@ -7,6 +7,9 @@ import CapacityMeter from './components/CapacityMeter';
 import TheoryPanel from './components/TheoryPanel';
 import { Beaker, Play, Pause, RefreshCw, Info, Cpu, Activity, Zap } from 'lucide-react';
 
+// Import our advanced UI CSS
+import './App.css';
+
 export default function App() {
   const { 
     state, params, isRunning, 
@@ -67,7 +70,7 @@ export default function App() {
 
           <button 
             onClick={runExperiment}
-            className="flex items-center gap-2 bg-accent-blue hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-all shadow-lg shadow-accent-blue/20"
+            className="flex items-center gap-2 bg-accent-blue hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-all shadow-lg shadow-accent-blue/20 btn-glow"
           >
             <Beaker className="w-4 h-4" />
             RUN EXPERIMENT
@@ -106,10 +109,10 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 text-xs font-bold tracking-widest transition-all border-b-2 ${
+                className={`tab-button flex items-center gap-2 px-6 py-3 text-xs font-bold tracking-widest ${
                   activeTab === tab.id 
-                    ? 'border-accent-blue text-accent-blue bg-accent-blue/5' 
-                    : 'border-transparent text-text-tertiary hover:text-text-secondary'
+                    ? 'active text-accent-blue bg-accent-blue/5' 
+                    : 'text-text-tertiary hover:text-text-secondary'
                 }`}
               >
                 <tab.icon className="w-3.5 h-3.5" />
@@ -120,7 +123,8 @@ export default function App() {
 
           {/* Visualization Content */}
           <div className="flex-1 p-6 overflow-hidden">
-            <div className="w-full h-full scientific-panel overflow-hidden relative bg-black/40">
+            {/* Added bg-grid-pattern here for the blueprint background */}
+            <div className="w-full h-full scientific-panel overflow-hidden relative bg-black/40 bg-grid-pattern">
               {activeTab === 'network' && (
                 <NetworkVisualizer state={state} params={params} />
               )}
@@ -134,15 +138,15 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Theory/Brainstorm Panel */}
-        <div className={`transition-all duration-300 overflow-hidden border-l border-border bg-bg-secondary shrink-0 ${isTheoryOpen ? 'w-[360px]' : 'w-0'}`}>
+        {/* Right Theory/Brainstorm Panel - Using hardware accelerated layout-transition */}
+        <div className={`layout-transition overflow-hidden border-l border-border bg-bg-secondary shrink-0 ${isTheoryOpen ? 'w-[360px]' : 'w-0'}`}>
           <TheoryPanel isVisible={isTheoryOpen} />
         </div>
 
         {/* Toggle Theory Panel */}
         <button 
           onClick={() => setIsTheoryOpen(!isTheoryOpen)}
-          className="absolute right-4 bottom-4 w-10 h-10 bg-bg-tertiary border border-border rounded-full flex items-center justify-center shadow-xl hover:border-accent-blue transition-colors z-50"
+          className="absolute right-4 bottom-4 w-10 h-10 bg-bg-tertiary border border-border rounded-full flex items-center justify-center shadow-xl hover:border-accent-blue transition-colors z-50 btn-glow"
         >
           <Info className={`w-5 h-5 ${isTheoryOpen ? 'text-accent-blue' : 'text-text-secondary'}`} />
         </button>
