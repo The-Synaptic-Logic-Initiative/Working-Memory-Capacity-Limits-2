@@ -28,3 +28,4 @@ To create an optimized, production-ready build in the `dist` folder:
 \`\`\`bash
 npm run build
 \`\`\`
+(its same as 1 juts a bit different, cuase i couldnt manage the physics and ui perfectly ~ though i still have those issues)
