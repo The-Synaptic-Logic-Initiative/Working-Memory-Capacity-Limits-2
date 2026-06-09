@@ -3,7 +3,7 @@
 A web-based interactive engine demonstrating Miller's Law (The Magical Number Seven, Plus or Minus Two) through Spiking Neural Networks (SNN). 
 
 Built with React, Vite, Tailwind CSS, D3.js, and Framer Motion.
-
+medium- https://medium.com/@virajkadwe01/what-i-built-and-why-it-surprised-me-2dc0a1f2235c
 ## Getting Started
 
 ### Prerequisites
